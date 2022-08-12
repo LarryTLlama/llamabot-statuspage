@@ -3,6 +3,7 @@
     ".git",
     "node_modules/**/node_modules",
     "source/routes/site/master.json",
-    "source/routes/site/errors.json"
+    "source/routes/site/errors.json",
+    "source/pvc.json"
   ]
 }

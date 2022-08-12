@@ -1,21 +1,24 @@
 /** source/server.ts */
 const http = require('http');
 const express = require('express');
-//const router = express.Router();
 const morgan = require('morgan');
-const { getPosts, getPost, addError, updateStatus, deletePost, addPost, bedrockStat, javaStat } = require('./controllers/posts.js');
-const path = require('path')
+const fileGetContents = require('file-get-contents');
+const util = require('minecraft-server-util');
+const path = require('path');
+const axios = require('axios');
+const fs = require('fs')
+const { updateStatus2, getMojangStat, getPosts, getPost, addError, updateStatus, deletePost, addPost, bedrockStat, javaStat } = require('./controllers/posts.js');
 
 const app = express();
 
-/** Logging 
+/** Logging */
 app.use(morgan('dev'));
-/** Parse the request 
+/** Parse the request */
 app.use(express.urlencoded({ extended: false }));
-/** Takes care of JSON data 
+/** Takes care of JSON data */
 app.use(express.json());
 
-/** RULES OF OUR API 
+/** RULES OF OUR API */
 app.use((req, res, next) => {
     // set the CORS policy
     res.header('Access-Control-Allow-Origin', '*');
@@ -28,9 +31,8 @@ app.use((req, res, next) => {
     }
     next();
 });
-*/
+
 /** Routes */
-console.log('router get /')
 app.get("/", function (req, res) {
   res.sendFile(path.join(__dirname + "/routes/site/index.html"));
 }); //Gets main page
@@ -43,15 +45,21 @@ app.get("/info", function (req, res) {
 app.get("/errors", function (req, res) {
   res.sendFile(path.join(__dirname + "/routes/site/errors.json"));
 })
+app.get('/pvc', function (req, res) {
+  res.sendFile(path.join(__dirname + "/pvc.json"));
+});
 app.get("/pvc/bedrock", bedrockStat)
 app.get("/pvc/java", javaStat)
+app.get("/mojang", getMojangStat)
 
 app.post("/log", updateStatus); //Update JSON with new data
 
 app.post("/error", addError); //Update Errors JSON with new data
 
-/** Error handling 
-router.use((req, res, next) => {
+app.post("/pvc", updateStatus2); //Update Errors JSON with new data
+
+/** Error handling */
+app.use((req, res, next) => {
     const error = new Error('not found');
     return res.status(404).json({
         message: error.message
@@ -62,3 +70,5 @@ router.use((req, res, next) => {
 const httpServer = http.createServer(app);
 const PORT = process.env.PORT || 6060;
 httpServer.listen(PORT, () => console.log(`The server is running on port ${PORT}`));
+
+

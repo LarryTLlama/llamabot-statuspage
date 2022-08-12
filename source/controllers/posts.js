@@ -71,20 +71,66 @@ const javaStat = async (req, res, next) => {
    
 };
 
+const javaStat2 = async (req, res, next) => {
+    //Get server status
+    const options = {
+    timeout: 1000 * 5, // timeout in milliseconds
+    enableSRV: true // SRV record lookup
+    };
+    let resp = '';
+
+    // The port and options arguments are optional, the
+    // port will default to 25565 and the options will
+    // use the default options.
+    util.status('session.minecraft.net', 25565, options)
+    .then((result) => {
+      return res.status(200).json({
+        "online": true, result
+    });
+    })
+    .catch((error) => { return res.status(200).json({
+        online: false, response: Error
+    });
+});
+   
+};
+
 const bedrockStat = async (req, res, next) => {
   
 const { Client } = require('raknet-native')
+console.log('Beginning Try Catch')
+try {
 const client = new Client('bedrock.peacefulvanilla.club', 19132, 'minecraft')
 //console.log(client.ping);
     client.on('pong', (data) => {
       const msg = data.extra.toString()
-      console.log('Decoded Buffer:')
-	    console.log(msg);
+      var parts = msg.split(";");
+const json = {
+	"online": true,
+	"edition": parts[0],
+	"motd_line_one": parts[1],
+	"motd_line_two": parts[7],
+	"players": {
+		"online": parts[4],
+		"max": parts[5],
+	},
+	"guid": parts[6],
+	"gamemode": {
+		"text": parts[8],
+		"id": parts[9]
+	},
+	"port": parts[10]
+}
+    return res.status(200).json(json);
       //if (!msg || msg != message) throw Error(`PONG mismatch ${msg} != ${message}`)
       client.close()
 	});
 	client.ping();
-	
+} catch(e) {
+return res.status(200).json({
+      "online": false, message: e
+    });
+}
 };
 
 // updating a post
@@ -95,6 +141,23 @@ const updateStatus = async (req, res, next) => {
     // get the data from req.body
     let content = req.body.json || null;
   
+    fs.writeFile(json, content, (err) => {
+     if (err) throw err;
+     console.log('It\'s saved as:\n' + content);
+    });
+    // return response
+    return res.status(200).json({
+      message: "Updated successfully"
+    });
+};
+
+const updateStatus2 = async (req, res, next) => {
+    // get the post id from the req.params
+    var json = "source/pvc.json";
+  
+    // get the data from req.body
+    let content = JSON.stringify(req.body) || null;
+    //console.log(req.body)
     fs.writeFile(json, content, (err) => {
      if (err) throw err;
      console.log('It\'s saved as:\n' + content);
@@ -184,6 +247,26 @@ const deletePost = async (req, res, next) => {
     });
 };
 
+const getMojangStat = async (req, res, next) => {
+    // get the post id from req.params
+    let id = req.params.id;
+    // delete the post
+  const axios = require('axios');
+  const mojang = require('mojang');
+    await axios.get(`https://authserver.mojang.com/`, {responseType: "application/json"})
+  .then(function (response) {
+    // handle success
+      console.log(response.data)
+      console.log(response.data.Status);
+    return res.status(200).json(response.data);
+  })
+  /*.catch(function (error) {
+    // handle error
+      console.log(error)
+   return res.status(503).json({status: 'NOT OK', error: `${error}`, code: error.status});
+  })*/
+};
+
 // adding a post
 const addPost = async (req, res, next) => {
     // get the data from req.body
@@ -200,4 +283,4 @@ const addPost = async (req, res, next) => {
     });
 };
 
-module.exports = { getPosts, getPost, addError, updateStatus, deletePost, addPost, bedrockStat, javaStat };
+module.exports = { updateStatus2, getPosts, getPost, addError, updateStatus, deletePost, addPost, bedrockStat, javaStat, getMojangStat };
